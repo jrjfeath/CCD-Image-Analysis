@@ -9,7 +9,7 @@ The area of the pixel is not used in any calculation!
 Written by Josh Featherstone 2021
 '''
 
-data = r'/home/josh/Downloads/Brouard/Images/argon 8'
+data = r'/home/josh/Downloads/Brouard/Images/argon 7'
 #The plinth constant (pc) determines how the pixels are counted
 #Using a pc of 0 counts each pixel as a single intensity ignoring radius
 #Using a pc of 1 determines pixels by the radius specified in the file
@@ -100,7 +100,6 @@ with open(data,'r') as opf:
                 yl+=1
             #Add intensity to channel at position X and Y
             channels[c][xl:xm,yl:ym] += sa
-            #except TypeError: print(xl, yl, xm, ym)
 
 #Set the larger value to the smaller value
 #Do this so that we have square images
@@ -125,16 +124,16 @@ string += 'STATISTICAL INFORMATION\n'
 for i in range(len(channels)):
     string+=f' Channel {i+1} : {chan_hits[i]}\n'
 string+='--------------------\n'
-string+=f' Total hit : {sum(chan_hits)}\n'
+string+=f' Total hit : {sum(chan_hits)}\n\n'
 
 #Determine symmetry
 sig_NO=(chan_hits[2]+chan_hits[3])-(chan_hits[1]+chan_hits[0])
 sig_ON=(chan_hits[6]+chan_hits[7])-(chan_hits[4]+chan_hits[5])
 
-try: string+=f'\n Asymmetry : {100.0*(sig_NO-sig_ON)/(sig_NO+sig_ON)}\n'
+try: string+=f' Asymmetry : {round(100.0*(sig_NO-sig_ON)/(sig_NO+sig_ON),2)}\n'
 except ZeroDivisionError: string+='\n Asymmetry : 0.0\n'
 sig_ON=1.04*sig_ON #steric asymmetry based on experimental unscattered signal
-try: string+=f'#Asymmetry : {100.0*(sig_NO-sig_ON)/(sig_NO+sig_ON)}\n'
+try: string+=f'#Asymmetry : {round(100.0*(sig_NO-sig_ON)/(sig_NO+sig_ON),2)}\n'
 except ZeroDivisionError: string+='#Asymmetry : 0.0\n'
 
 #Rebuild image data
@@ -143,15 +142,6 @@ Vimage_NO = (channels[3] - channels[1]) #V_NO
 
 Himage_ON = (channels[4] - channels[6]) #H_ON
 Vimage_ON = (channels[7] - channels[5]) #V_ON
-
-sumimg_NO = Vimage_NO + Himage_NO #V+H_NO
-sumimg_ON = Vimage_ON + Himage_ON #V+H_ON
-
-difimg_NO = Himage_NO - Vimage_NO #V-H_NO
-difimg_ON = Himage_ON - Vimage_ON #V-H_ON
-
-ndif_NO = difimg_NO/sumimg_NO #V-H_V+H_NO
-ndif_ON = difimg_ON/sumimg_ON #V-H_V+H_ON
 
 #Get sums of all of the arrays
 HNOS, VNOS = int(np.sum(Himage_NO)), int(np.sum(Vimage_NO))
@@ -165,15 +155,15 @@ string+=f' Vimage_NO : {VNOS}\n'
 string+=f' Himage_ON : {HONS}\n'
 string+=f' Vimage_ON : {VONS}\n'
 string+='--------------------\n'
-string+=f'Brightness : {HNOS+VNOS+HONS+VONS}\n'
+string+=f'Brightness : {HNOS+VNOS+HONS+VONS}\n\n'
 
 sig_NO=HNOS+VNOS
 sig_ON=HONS+VONS
 
-try: string+=f'\n Asymmetry : {100.0*(sig_NO-sig_ON)/(sig_NO+sig_ON)}\n'
+try: string+=f' Asymmetry : {round(100.0*(sig_NO-sig_ON)/(sig_NO+sig_ON),2)}\n'
 except ZeroDivisionError: string+='\n Asymmetry : 0.0\n'
 sig_ON=1.04*sig_ON #steric asymmetry based on experimental unscattered signal
-try: string+=f'#Asymmetry : {100.0*(sig_NO-sig_ON)/(sig_NO+sig_ON)}\n'
+try: string+=f'#Asymmetry : {round(100.0*(sig_NO-sig_ON)/(sig_NO+sig_ON),2)}\n'
 except ZeroDivisionError: string+='#Asymmetry : 0.0\n'
 
 string+='\nWriting image data to files...\n\n'
@@ -206,6 +196,9 @@ def save_image(img_data,fname):
     fig, ax = plt.subplots(nrows=1,ncols=1)
     im = ax.pcolormesh(X,Y,Z,shading='auto')
     fig.colorbar(im)
+    #shrink image to account for rotation
+    plt.ylim([max_x*0.07, max_x-max_x*0.07])
+    plt.xlim([max_x*0.07, max_x-max_x*0.07])
     plt.savefig(fname)
 
 #Create directory to store data
@@ -215,17 +208,34 @@ fname = fname.replace(' ','_')+'_d' #Add _d in the event user used _
 dname = os.path.join(dname,fname) #new directory name
 try: os.mkdir(dname)
 except FileExistsError: pass
-#Save the various images
-if np.sum(Himage_NO) > 0:save_image(Himage_NO,os.path.join(dname,'H_NO.png'))
-if np.sum(Vimage_NO) > 0:save_image(Vimage_NO,os.path.join(dname,'V_NO.png'))
-if np.sum(Himage_ON) > 0:save_image(Himage_ON,os.path.join(dname,'H_ON.png'))
-if np.sum(Vimage_ON) > 0:save_image(Vimage_ON,os.path.join(dname,'V_ON.png'))
-if np.sum(sumimg_NO) > 0:save_image(sumimg_NO,os.path.join(dname,'V+H_NO.png'))
-if np.sum(sumimg_ON) > 0:save_image(sumimg_ON,os.path.join(dname,'V+H_ON.png'))
-if np.sum(difimg_NO) > 0:save_image(difimg_NO,os.path.join(dname,'V-H_NO.png'))
-if np.sum(difimg_ON) > 0:save_image(difimg_ON,os.path.join(dname,'V-H_ON.png'))
-if np.sum(ndif_NO) > 0:save_image(ndif_NO,os.path.join(dname,'V-H_V+H_NO.png'))
-if np.sum(ndif_ON) > 0:save_image(ndif_ON,os.path.join(dname,'V-H_V+H_ON.png'))
+
+#Save the various V & H images
+if np.sum(Himage_NO) > 0 : save_image(Himage_NO,os.path.join(dname,'H_NO.png'))
+if np.sum(Vimage_NO) > 0 : save_image(Vimage_NO,os.path.join(dname,'V_NO.png'))
+if np.sum(Himage_ON) > 0 : save_image(Himage_ON,os.path.join(dname,'H_ON.png'))
+if np.sum(Vimage_ON) > 0 : save_image(Vimage_ON,os.path.join(dname,'V_ON.png'))
+
+#Build additional arrays for experimental image analysis
+#Don't take the sum and difference of images if empty arrays
+if np.sum(Vimage_NO) != 0 and np.sum(Himage_NO) != 0:
+    sumimg_NO = Vimage_NO + Himage_NO #V+H_NO
+    difimg_NO = Himage_NO - Vimage_NO #V-H_NO
+    ndif_NO = difimg_NO/sumimg_NO #V-H_V+H_NO
+    ndif_NO = np.nan_to_num(ndif_NO) #Replace nan values with 0
+
+    save_image(sumimg_NO,os.path.join(dname,'V+H_NO.png'))
+    save_image(difimg_NO,os.path.join(dname,'V-H_NO.png'))
+    save_image(ndif_NO,os.path.join(dname,'V-H_V+H_NO.png'))
+
+if np.sum(Vimage_ON) != 0 and np.sum(Himage_ON) != 0:
+    sumimg_ON = Vimage_ON + Himage_ON #V+H_ON
+    difimg_ON = Himage_ON - Vimage_ON #V-H_ON
+    ndif_ON = difimg_ON/sumimg_ON #V-H_V+H_ON
+    ndif_ON = np.nan_to_num(ndif_ON) #Replace nan values with 0
+
+    save_image(sumimg_ON,os.path.join(dname,'V+H_ON.png'))
+    save_image(difimg_ON,os.path.join(dname,'V-H_ON.png'))
+    save_image(ndif_ON,os.path.join(dname,'V-H_V+H_ON.png'))
 
 string+=f'Runtime (s): {round(time.time()-start,2)}'
 
