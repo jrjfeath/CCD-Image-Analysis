@@ -193,6 +193,15 @@ def save_image(img_data,fname):
     Z[Z<0] = 0 #Set everything below 0 to 0
     Z[Z>ZM[0]] = ZM[0] #Scale everything to best intensity
 
+    #write data to .dat file
+    string = ""
+    for i1 in range(len(X)):
+        for i2 in range(len(Y[i1])):
+            string+=f'{i1} {i2} {round(Z[i1][i2],2)}\n'
+        string+='\n'
+    with open(f'{fname[:-4]}.dat','w') as opf:
+        opf.write(string)
+
     fig, ax = plt.subplots(nrows=1,ncols=1)
     im = ax.pcolormesh(X,Y,Z,shading='auto')
     fig.colorbar(im)
